@@ -1,8 +1,4 @@
-# moonshine-Kitten
-
-|readme_content|
-|---|
-|# Moonshine Kitten Voice Chat
+# moonshine-Kitten Voice Chat
 
 A lightweight, real-time voice chat application built with Python using fully local models:
 - **Speech-to-Text (STT)** — Moonshine Voice (real-time microphone transcription) 
