@@ -1,1 +1,59 @@
-/venv/*
+# ────────────────────────────────────────────────
+# uv-специфичное (самое важное!)
+
+# Виртуальное окружение, которое uv создаёт автоматически
+.venv/
+venv/
+env/
+
+# Кэш uv (очень большой, не нужен в git)
+.uv/
+uv-cache/
+
+# Lock-файл — обычно коммитят, но если хочешь экспериментировать — можно игнорить
+# uv.lock               # ← раскомментируй, если НЕ хочешь коммитить lock
+
+# ────────────────────────────────────────────────
+# Стандартный Python (дополнения к официальному шаблону)
+
+__pycache__/
+*.py[cod]
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Окружения и секреты
+.env
+.env.*
+!.env.example
+
+# IDE / редакторы
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Тесты / кэш / покрытие
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints/
+
+# Локальные БД / логи / временное
+*.sqlite3
+*.log
+*.logs
+*.tmp
+.DS_Store
+Thumbs.db
