@@ -1,66 +1,112 @@
 # moonshine-Kitten Voice Chat
-A lightweight, real-time voice chat application built with Python using fully local models:
-- **Speech-to-Text (STT)** — Moonshine Voice (real-time microphone transcription) 
-- **Language Model (LLM)** — Ollama (local inference) 
-- **Text-to-Speech (TTS)** — KittenTTS (ONNX-based voice synthesis)
+
+Real-time local voice assistant in Python:
+
+- **STT**: Moonshine Voice (microphone transcription)
+- **LLM**: Ollama (local chat inference)
+- **TTS**: KittenTTS (ONNX speech synthesis)
+
 ## Features
-- Real-time voice input → text → LLM response → spoken output 
-- Feedback loop protection (AI does not hear itself) 
-- Fully local processing (no cloud APIs after initial setup) 
-- Easy switching of Ollama models and TTS voices
+
+- Real-time voice loop: mic → text → LLM → spoken reply
+- Fully local runtime (no cloud inference in the chat loop)
+- Feedback-loop protection (`is_speaking` guard + cooldown)
+- Voice compatibility fallback (legacy names like `Jasper` auto-map to current local voices)
+- Smoother playback (fade-in/fade-out + small silence padding to reduce clicks/pops)
+
 ## Requirements
-### 1. System dependencies
-**macOS (Apple Silicon recommended)**
-```bash # Required by phonemizer (used inside KittenTTS) brew install espeak-ng ```
-**Windows**
-```powershell 
-# Recommended via Chocolatey choco install espeak-ng
-# Or download manually: 
-# https://github.com/espeak-ng/espeak-ng/releases
-```
-**Ubuntu / Debian**
+
+### 1) System dependency (phonemizer / espeak-ng)
+
+macOS:
+
 ```bash
-sudo apt update sudo apt install espeak-ng libespeak-ng1
+brew install espeak-ng
 ```
-### 2. Python & uv
-- Python 3.10 – 3.13 - [uv](https://docs.astral.sh/uv/getting-started/installation/) — fast modern Python project & dependency manager.
-Install uv if you don't have it yet:
+
+Ubuntu / Debian:
+
 ```bash
-# macOS / Linux 
-curl -LsSf https://astral.sh/uv/install.sh "| sh
+sudo apt update && sudo apt install espeak-ng libespeak-ng1
 ```
-### 3. Ollama (local LLM backend)
-- Download and install: https://ollama.com 
-- Start Ollama server: run `ollama serve` or open Ollama.app 
-- Pull at least one model (example):
+
+Windows:
+
+- Install `espeak-ng` (Chocolatey or manual installer from official releases)
+
+### 2) Python + uv
+
+- Python `>=3.12` (from `pyproject.toml`)
+- Install `uv`: https://docs.astral.sh/uv/getting-started/installation/
+
+### 3) Ollama
+
+Install Ollama and ensure it is running (`ollama serve` or Ollama app).
+
+Pull at least one local model, for example:
+
 ```bash
 ollama pull gemma2:2b
-# other good small models: # ollama pull phi3:mini # ollama pull llama3.2:3b # ollama pull tinyllama:1.1b
 ```
-## Quick Start
-```bash 
-# 1. Clone the repository
-git clone https://github.com/berlogabob/moonshine-Kitten.git cd moonshine-Kitten
-# 2. Install all Python dependencies (creates .venv automatically)
+
+## Quick start
+
+```bash
+# 1. Clone
+git clone https://github.com/berlogabob/moonshine-Kitten.git
+cd moonshine-Kitten
+
+# 2. Install dependencies
 uv sync
-# 3. Download the TTS model (~75 MB, one-time)
+
+# 3. One-time TTS model download (~75 MB)
 uv run hf download KittenML/kitten-tts-mini-0.8 --local-dir ./kitten-tts-mini-0.8
-# 4. Run the voice chat
+
+# 4. Run the app
 uv run voice_chat_v03.py
 ```
-## Configuration (edit in `voice_chat_v03.py`)
+
+## Current runtime behavior (`voice_chat_v03.py`)
+
+- Loads ONNX model from:
+  - `./kitten-tts-mini-0.8/kitten_tts_mini_v0_8.onnx`
+- Loads local voice embeddings from:
+  - `./kitten-tts-mini-0.8/voices.npz`
+- If configured `VOICE` is missing, it prints a warning and selects a compatible fallback.
+- Performs a startup TTS self-test before microphone listener starts.
+
+## Configuration
+
+Edit constants near top of `voice_chat_v03.py`:
+
 ```python
-# Which Ollama model to use (must be pulled already)
 OLLAMA_MODEL = "gemma2:2b"
-# alternatives: "phi3:mini", "llama3.2:3b", "tinyllama:1.1b"
-# Preferred TTS voice
-VOICE = "Jasper"
+VOICE = "Jasper"  # legacy alias supported; auto-resolved if missing
+AUDIO_SAMPLE_RATE = 24000
 ```
 
-`voice_chat_v03.py` now resolves legacy voice names (for example `Jasper`, `Bella`, `Luna`) to available voices from `kitten-tts-mini-0.8/voices.npz`.
-If your configured voice is unavailable, the app prints a warning and auto-selects a compatible fallback.
+Legacy aliases currently mapped:
 
-To inspect your local voices:
+- `Jasper` → male `expr-voice-*`
+- `Bella` / `Luna` → female `expr-voice-*`
+
+Inspect voices available on your machine:
+
 ```bash
 uv run python -c "import numpy as np; z=np.load('kitten-tts-mini-0.8/voices.npz'); print(z.files)"
 ```
+
+## Troubleshooting
+
+If TTS model files are missing or corrupted:
+
+```bash
+rm -rf ./kitten-tts-mini-0.8
+uv run hf download KittenML/kitten-tts-mini-0.8 --local-dir ./kitten-tts-mini-0.8
+```
+
+If speech sounds wrong after dependency changes:
+
+- Re-run `uv sync`
+- Verify local voices list with the command above
+- Run `uv run voice_chat_v03.py` and check startup warnings
