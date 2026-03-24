@@ -56,17 +56,17 @@ ollama pull gemma2:2b
 git clone https://github.com/berlogabob/moonshine-Kitten.git
 cd moonshine-Kitten
 
-# 2. Install dependencies
-uv sync
+# 2. Install dependencies into project-local virtual env (.venv)
+UV_PROJECT_ENVIRONMENT=.venv uv sync
 
 # 3. One-time TTS model download (~75 MB)
-uv run hf download KittenML/kitten-tts-mini-0.8 --local-dir ./kitten-tts-mini-0.8
+UV_PROJECT_ENVIRONMENT=.venv uv run hf download KittenML/kitten-tts-mini-0.8 --local-dir ./kitten-tts-mini-0.8
 
 # 4. Run the app
-uv run voice_chat_v03.py
+UV_PROJECT_ENVIRONMENT=.venv uv run voice_chat.py
 ```
 
-## Current runtime behavior (`voice_chat_v03.py`)
+## Current runtime behavior (`voice_chat.py`)
 
 - Loads ONNX model from:
   - `./kitten-tts-mini-0.8/kitten_tts_mini_v0_8.onnx`
@@ -74,15 +74,52 @@ uv run voice_chat_v03.py
   - `./kitten-tts-mini-0.8/voices.npz`
 - If configured `VOICE` is missing, it prints a warning and selects a compatible fallback.
 - Performs a startup TTS self-test before microphone listener starts.
+- Source is split into small modules under `voice_chat_app/`.
+
+## Project structure
+
+- `voice_chat.py` — minimal entrypoint
+- `voice_chat_app/app.py` — startup flow and main loop
+- `voice_chat_app/listener.py` — transcription event handler and LLM/TTS loop
+- `voice_chat_app/tts_setup.py` — TTS model/voice loading and compatibility checks
+- `voice_chat_app/audio.py` — audio normalization + click/pop smoothing
+- `voice_chat_app/text_utils.py` — response text cleanup
+- `voice_chat_app/ollama_models.py` — default model name
+- `voice_chat_app/ollama_settings.py` — generation options + fallback
+- `voice_chat_app/prompts.py` — system prompt
+- `voice_chat_app/config.py` — non-LLM runtime constants
 
 ## Configuration
 
-Edit constants near top of `voice_chat_v03.py`:
+Edit constants in:
+
+- `voice_chat_app/ollama_models.py` (LLM model)
+- `voice_chat_app/prompts.py` (system prompt)
+- `voice_chat_app/config.py` (voice/audio/model paths)
 
 ```python
 OLLAMA_MODEL = "gemma2:2b"
 VOICE = "Jasper"  # legacy alias supported; auto-resolved if missing
 AUDIO_SAMPLE_RATE = 24000
+```
+
+## Zed editor setup (Python diagnostics)
+
+This repo uses a project-local virtual environment at `./.venv`.
+Set Zed to use it (already configured in `.zed/settings.json`):
+
+```json
+{
+  "languages": {
+    "Python": {
+      "language_servers": ["pyright"],
+      "venv": {
+        "path": ".",
+        "default": ".venv"
+      }
+    }
+  }
+}
 ```
 
 Legacy aliases currently mapped:
@@ -107,6 +144,6 @@ uv run hf download KittenML/kitten-tts-mini-0.8 --local-dir ./kitten-tts-mini-0.
 
 If speech sounds wrong after dependency changes:
 
-- Re-run `uv sync`
+- Re-run `UV_PROJECT_ENVIRONMENT=.venv uv sync`
 - Verify local voices list with the command above
-- Run `uv run voice_chat_v03.py` and check startup warnings
+- Run `UV_PROJECT_ENVIRONMENT=.venv uv run voice_chat.py` and check startup warnings
