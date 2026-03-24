@@ -80,7 +80,12 @@ UV_PROJECT_ENVIRONMENT=.venv uv run voice_chat.py
 
 - `voice_chat.py` — minimal entrypoint
 - `voice_chat_app/app.py` — startup flow and main loop
-- `voice_chat_app/listener.py` — transcription event handler and LLM/TTS loop
+- `voice_chat_app/listener.py` — Moonshine event bridge to the engine
+- `voice_chat_app/engine.py` — main conversation/runtime orchestration
+- `voice_chat_app/state.py` — chat history state and trimming
+- `voice_chat_app/llm.py` — Ollama response generation/cleaning
+- `voice_chat_app/speech_pipeline.py` — chunked parallel TTS generation + playback queue
+- `voice_chat_app/chunking.py` — text chunk splitting rules for low latency speech
 - `voice_chat_app/tts_setup.py` — TTS model/voice loading and compatibility checks
 - `voice_chat_app/audio.py` — audio normalization + click/pop smoothing
 - `voice_chat_app/text_utils.py` — response text cleanup
@@ -88,6 +93,43 @@ UV_PROJECT_ENVIRONMENT=.venv uv run voice_chat.py
 - `voice_chat_app/ollama_settings.py` — generation options + fallback
 - `voice_chat_app/prompts.py` — system prompt
 - `voice_chat_app/config.py` — non-LLM runtime constants
+
+### Module flow (who calls whom)
+
+1. `voice_chat.py` calls `voice_chat_app.app.run()`.
+2. `app.py` initializes espeak, loads TTS/voices, runs startup TTS test, and starts `MicTranscriber`.
+3. Moonshine emits transcript-line events to `listener.SafeListener`.
+4. `listener.py` forwards text to `engine.VoiceChatEngine.process_user_text(...)`.
+5. `engine.py` updates `state.ChatState`, requests reply from `llm.py`, then triggers speech via `speech_pipeline.py`.
+6. `speech_pipeline.py` splits text (via `chunking.py`), generates TTS chunk-by-chunk, and plays queued audio.
+
+### What to edit for common tasks
+
+- Change LLM model:
+  - `voice_chat_app/ollama_models.py`
+- Change assistant personality/system instruction:
+  - `voice_chat_app/prompts.py`
+- Change Ollama generation behavior (`temperature`, `num_predict`, penalties):
+  - `voice_chat_app/ollama_settings.py`
+- Change chunking behavior (latency vs naturalness tradeoff):
+  - `voice_chat_app/chunking.py`
+- Change speech gain/fade/padding:
+  - `voice_chat_app/audio.py`
+  - and chunk playback parameters in `voice_chat_app/speech_pipeline.py`
+- Change runtime paths and STT model config:
+  - `voice_chat_app/config.py`
+- Add app-level integrations (TouchDesigner hooks, control surface):
+  - prefer `voice_chat_app/engine.py` and `voice_chat_app/app.py` as integration boundaries.
+
+### TouchDesigner integration notes
+
+For TouchDesigner, treat `VoiceChatEngine` as the core unit:
+
+- input boundary: text coming from mic/STT or external UI
+- output boundary: spoken playback in `speech_pipeline.py` (or replace with a custom audio sink)
+- state boundary: `ChatState` history
+
+If needed, you can create a small adapter that calls `engine.process_user_text(...)` directly from TD callbacks.
 
 ## Configuration
 

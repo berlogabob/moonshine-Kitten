@@ -15,9 +15,9 @@ from .config import (
     MODEL_PATH,
     VOICE,
 )
+from .engine import VoiceChatEngine
 from .listener import SafeListener
 from .ollama_models import OLLAMA_MODEL
-from .prompts import SYSTEM_PROMPT
 from .tts_setup import build_tts
 
 
@@ -39,7 +39,13 @@ def run():
         )
         raise
 
-    chat_history = [{"role": "system", "content": SYSTEM_PROMPT}]
+    engine = VoiceChatEngine(
+        tts=tts,
+        selected_voice=selected_voice,
+        ollama_model=OLLAMA_MODEL,
+        audio_sample_rate=AUDIO_SAMPLE_RATE,
+        cooldown_seconds=0.8,
+    )
 
     print("Voice chat started — feedback loop protection enabled")
     print(f"  LLM model : {OLLAMA_MODEL}")
@@ -65,15 +71,7 @@ def run():
         transcriber = MicTranscriber(
             model_path=MODEL_PATH, model_arch=ModelArch(MODEL_ARCH)
         )
-        transcriber.add_listener(
-            SafeListener(
-                chat_history=chat_history,
-                tts=tts,
-                selected_voice=selected_voice,
-                ollama_model=OLLAMA_MODEL,
-                audio_sample_rate=AUDIO_SAMPLE_RATE,
-            )
-        )
+        transcriber.add_listener(SafeListener(engine=engine))
         transcriber.start()
         threading.Event().wait()
     except KeyboardInterrupt:
