@@ -48,12 +48,19 @@ uv run hf download KittenML/kitten-tts-mini-0.8 --local-dir ./kitten-tts-mini-0.
 # 4. Run the voice chat
 uv run voice_chat_v03.py
 ```
-## Configuration (edit in voice_chat_v03.py)
+## Configuration (edit in `voice_chat_v03.py`)
 ```python
-# Which Ollama model to use (must be pulled already
+# Which Ollama model to use (must be pulled already)
 OLLAMA_MODEL = "gemma2:2b"
 # alternatives: "phi3:mini", "llama3.2:3b", "tinyllama:1.1b"
-# TTS voice
-(from KittenTTS voices.npz) VOICE = "Jasper"
-# try "Bella" or "Luna" if too quiet
+# Preferred TTS voice
+VOICE = "Jasper"
+```
+
+`voice_chat_v03.py` now resolves legacy voice names (for example `Jasper`, `Bella`, `Luna`) to available voices from `kitten-tts-mini-0.8/voices.npz`.
+If your configured voice is unavailable, the app prints a warning and auto-selects a compatible fallback.
+
+To inspect your local voices:
+```bash
+uv run python -c "import numpy as np; z=np.load('kitten-tts-mini-0.8/voices.npz'); print(z.files)"
 ```
