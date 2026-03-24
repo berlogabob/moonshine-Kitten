@@ -18,7 +18,7 @@ warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 # ===================== CONFIGURATION =====================
 
-OLLAMA_MODEL = "gemma2:2b"  # Change to "phi3:mini", "tinyllama:1.1b", etc. if desired
+OLLAMA_MODEL = "gemma2:2b"  # Change to "gemma2:2b", "phi3:mini", etc. if desired
 VOICE = "Jasper"  # TTS voice — try "Bella" or "Luna" if Jasper sounds weak
 MODEL_PATH = "/Users/berloga/Library/Caches/moonshine_voice/download.moonshine.ai/model/medium-streaming-en/quantized"
 MODEL_ARCH = 5  # Architecture index for Moonshine model
@@ -116,6 +116,7 @@ def load_compatible_voices(voices_file: str, session):
         raise ValueError(f"No voices found in archive: {voices_file}")
 
     return compatible_voices
+
 
 # ===================== LOAD TTS MODEL =====================
 try:
@@ -228,9 +229,22 @@ class SafeListener(TranscriptEventListener):
                     "num_predict": 80,  # Max tokens in reply
                     "repeat_penalty": 1.25,  # Discourage repetition
                 },
-            )["message"]["content"].strip()
+            )
 
-            clean_resp = clean_text(response)
+            message = response.get("message") or {}
+            content = message.get("content")
+            if content is None:
+                content = ""
+            reply_text = content.strip()
+
+            if not reply_text:
+                fallback_reply = "Okay."
+                print("AI returned empty content, using fallback reply.")
+                reply_text = fallback_reply
+
+            clean_resp = clean_text(reply_text)
+            if not clean_resp:
+                clean_resp = "Okay."
             print(f"AI: {clean_resp}")
             chat_history.append({"role": "assistant", "content": clean_resp})
 
