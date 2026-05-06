@@ -189,3 +189,6 @@ If speech sounds wrong after dependency changes:
 - Re-run `UV_PROJECT_ENVIRONMENT=.venv uv sync`
 - Verify local voices list with the command above
 - Run `UV_PROJECT_ENVIRONMENT=.venv uv run voice_chat.py` and check startup warnings
+
+
+гзвфеу
